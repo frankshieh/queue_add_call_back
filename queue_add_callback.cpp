@@ -7,11 +7,13 @@
 
 using namespace std;
 using namespace std::chrono;
-using namespace std::literals; // enables the usage of 24h, 1ms, 1s instead of
+using namespace std::literals; // enables the usage of 24h, 1ms, 1s instead of
+
 struct callbackType {
 	std::string name;
 	cv::Mat frame;
-	std::chrono::steady_clock::time_point t;};
+	std::chrono::steady_clock::time_point t;
+};
 
 int main() {
 	// Create pipeline
@@ -33,7 +35,8 @@ int main() {
 	right->setBoardSocket(dai::CameraBoardSocket::RIGHT);
 	right->setResolution(dai::MonoCameraProperties::SensorResolution::THE_400_P);
 	left->setFps(110);
-	right->setFps(110);
+	right->setFps(110);
+
 
 	// Stream all the camera streams through the same XLink node
 	// camRgb->preview.link(xout->input);
@@ -83,7 +86,10 @@ int main() {
 			cv::imshow(data.name.c_str(), data.frame);
 		}
 	}
-	std::chrono::steady_clock::time_point StartTime, FrameTime;	StartTime = queueBuf.front().t;	cout << "Press space for next, 'q' to quit" << endl;
+	std::chrono::steady_clock::time_point StartTime, FrameTime;
+	StartTime = queueBuf.front().t;
+	cout << "Press space for next, 'q' to quit" << endl;
+
  	while (queueBuf.size() >0) {
 		callbackType data;
 
