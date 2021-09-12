@@ -14,6 +14,13 @@ struct callbackType {
 	cv::Mat frame;
 	std::chrono::steady_clock::time_point t;
 };
+// global
+// frame status
+std::chrono::steady_clock::time_point lPrevTime, rPrevTime;
+int lLostFrames = 0, rLostFrames = 0;
+int lLost2Frames = 0, rLost2Frames = 0;
+int lLost3Frames = 0, rLost3Frames = 0;
+int startFlag = 0;
 
 int main() {
 	// Create pipeline
@@ -49,7 +56,7 @@ int main() {
 
 	// Connect to device and start pipeline
 	dai::Device device(pipeline);
-	device.setXLinkChunkSize(0);
+	device.setXLinkChunkSize(0);	
 
 	auto newFrame = [&queueMtx, &queue](std::shared_ptr<dai::ADatatype> callback) {
 		if (dynamic_cast<dai::ImgFrame*>(callback.get()) != nullptr) {
@@ -64,6 +71,23 @@ int main() {
 			queue.push(cb);
 			if (queue.size() > 1000) // keep only 1000 frames
 				queue.pop();
+			if (0 == startFlag) {
+				lPrevTime = t1;
+				rPrevTime = t1;
+				startFlag = 1;
+			}
+			if (num == 1) {  // left
+				if ((t1 - lPrevTime) / 1ms > 10) lLostFrames++;
+				if ((t1 - lPrevTime) / 1ms > 18) lLost2Frames++;
+				if ((t1 - lPrevTime) / 1ms > 27) lLost3Frames++;
+				lPrevTime = t1;
+			}
+			if (num == 2) {  // right
+				if ((t1 - rPrevTime) / 1ms > 10) rLostFrames++;
+				if ((t1 - rPrevTime) / 1ms > 18) rLost2Frames++;
+				if ((t1 - rPrevTime) / 1ms > 27) rLost3Frames++;
+				rPrevTime = t1;
+			}
 				
 		}
 	};
@@ -71,7 +95,7 @@ int main() {
 	// Add callback to the output queue "frames" for all newly arrived frames (color, left, right)
 	device.getOutputQueue("frames", 4, false)->addCallback(newFrame);
 	
-	while (queueBuf.size()<220) {
+	while (queueBuf.size()<1000) {
 		callbackType data;
 		{
 			std::unique_lock<std::mutex> lock(queueMtx);
@@ -89,7 +113,12 @@ int main() {
 	std::chrono::steady_clock::time_point StartTime, FrameTime;
 	StartTime = queueBuf.front().t;
 	cout << "Press space for next, 'q' to quit" << endl;
-
+	cout << "R lost frames:" << rLostFrames << endl;
+	cout << "L lost frames:" << lLostFrames << endl;
+	cout << "R lost >=2 frames:" << rLost2Frames << endl;
+	cout << "L lost >=2 frames:" << lLost2Frames << endl;
+	cout << "R lost >=3 frames:" << rLost3Frames << endl;
+	cout << "L lost >=3 frames:" << lLost3Frames << endl;
  	while (queueBuf.size() >0) {
 		callbackType data;
 
